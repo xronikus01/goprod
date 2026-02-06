@@ -12,13 +12,17 @@ go run .
 
 Register
 ```powershell
-Invoke-RestMethod -Method Post -Uri "http://localhost:8080/register" -ContentType "application/json" -Body '{"email":"u1@mail.com","username":"u1","password":"secret12"}'
+$body = '{"email":"u1@mail.com","username":"u1","password":"secret12"}'
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/register" -ContentType "application/json" -Body $body
+
 ```
 
 Login (get token)
 ```powershell
-$resp = Invoke-RestMethod -Method Post -Uri "http://localhost:8080/login" -ContentType "application/json" -Body '{"email":"u1@mail.com","password":"secret12"}'
+$body = '{"email":"u1@mail.com","password":"secret12"}'
+$resp = Invoke-RestMethod -Method Post -Uri "http://localhost:8080/login" -ContentType "application/json" -Body $body
 $resp.token
+
 ```
 Profile (protected)
 ```powershell
