@@ -1,50 +1,60 @@
 package main
 
 import (
+	"context"
 	"net/http"
-	// TODO: Добавьте необходимые импорты:
-	// "context"
-	// "strings"
+	"strconv"
+	"strings"
 )
 
-// AuthMiddleware проверяет JWT токен и устанавливает контекст пользователя
+type ctxKey string
+
+const userIDKey ctxKey = "user_id"
+
+// AuthMiddleware оборачивает handler и требует валидный JWT в Authorization: Bearer <token>
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Реализуйте проверку JWT токена
-		//
-		// Что нужно сделать:
-		// 1. Импортируйте "context" и "strings"
-		// 2. Получите заголовок Authorization из запроса
-		// 3. Проверьте, что заголовок не пустой
-		// 4. Проверьте формат "Bearer <token>" и извлеките токен
-		// 5. Валидируйте токен с помощью ValidateToken() из auth.go
-		// 6. Добавьте данные пользователя в контекст запроса
-		// 7. Передайте управление следующему обработчику
-		//
-		// Если токен невалиден - верните 401 Unauthorized
-		// Если токен отсутствует - верните 401 Unauthorized
-		//
-		// Используйте:
-		// - r.Header.Get("Authorization")
-		// - strings.TrimPrefix(authHeader, "Bearer ")
-		// - context.WithValue(r.Context(), "userID", claims.UserID)
-		// - next.ServeHTTP(w, r.WithContext(ctx))
+		h := r.Header.Get("Authorization")
+		if !strings.HasPrefix(h, "Bearer ") {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 
-		// Временная заглушка - УДАЛИТЕ после реализации!
-		http.Error(w, "Middleware not implemented", http.StatusNotImplemented)
+		tokenStr := strings.TrimSpace(strings.TrimPrefix(h, "Bearer "))
+		if tokenStr == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := ValidateToken(tokenStr)
+		if err != nil || claims == nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// user id берём из Subject (sub)
+		if claims.Subject == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		id, err := strconv.Atoi(claims.Subject)
+		if err != nil || id <= 0 {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), userIDKey, id)
+		next(w, r.WithContext(ctx))
 	}
 }
 
-// GetUserIDFromContext извлекает ID пользователя из контекста
+// GetUserIDFromContext достаёт userID из контекста запроса
 func GetUserIDFromContext(r *http.Request) (int, bool) {
-	// TODO: Реализуйте извлечение userID из контекста
-	//
-	// Что нужно сделать:
-	// 1. Используйте r.Context().Value("userID")
-	// 2. Проведите type assertion к int
-	// 3. Верните значение и булевый флаг успешности
-	//
-	// Пример: userID, ok := r.Context().Value("userID").(int)
-
-	return 0, false
+	v := r.Context().Value(userIDKey)
+	id, ok := v.(int)
+	if !ok || id <= 0 {
+		return 0, false
+	}
+	return id, true
 }

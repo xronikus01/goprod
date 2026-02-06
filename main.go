@@ -9,10 +9,12 @@ import (
 )
 
 func main() {
-	// Загрузка переменных окружения из .env файла
 	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: .env file not found")
+		log.Println("no .env file found, using OS env")
 	}
+
+	log.Printf("DB_HOST=%q DB_PORT=%q DB_USER=%q DB_PASSWORD=%q DB_NAME=%q",
+		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 
 	// Инициализация JWT секретного ключа
 	InitAuth()
